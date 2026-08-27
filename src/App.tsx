@@ -190,6 +190,37 @@ export default function App() {
     setUserProfile(prev => ({ ...prev, ...updated }));
   };
 
+  const handleResetStatistics = () => {
+    // 1. Reset userProfile stats (streak, total words learned)
+    setUserProfile(prev => ({
+      ...prev,
+      streakDays: 0,
+      totalWordsLearned: 0
+    }));
+
+    // 2. Reset vocabulary items back to New / initial state
+    setVocabList(prev =>
+      prev.map(item => ({
+        ...item,
+        status: 'New',
+        masteryPercentage: 0,
+        repetitions: 0,
+        interval: 1,
+        easeFactor: 2.5,
+        nextReviewDate: undefined,
+        lastReviewedDate: undefined,
+        reviewHistory: []
+      }))
+    );
+
+    // 3. Reset daily tasks to incomplete
+    setTasks(prev => prev.map(t => ({ ...t, completed: false })));
+
+    // 4. Reset simulation time & cached states
+    resetSimulatedTime();
+    localStorage.removeItem('logos_sm2_simulated_days');
+  };
+
   const handleThemePreference = (theme: 'light' | 'dark' | 'system') => {
     if (theme === 'dark') {
       setIsDarkMode(true);
@@ -297,6 +328,7 @@ export default function App() {
             userProfile={userProfile}
             onUpdateProfile={handleUpdateProfile}
             onToggleTheme={handleThemePreference}
+            onResetStats={handleResetStatistics}
           />
         )}
       </div>
