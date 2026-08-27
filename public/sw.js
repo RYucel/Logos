@@ -1,15 +1,15 @@
 // Service Worker for LOGOS Greek Language Learning PWA
-const CACHE_NAME = 'logos-greek-pwa-v1';
+const CACHE_NAME = 'logos-greek-pwa-v2';
 const ASSETS_TO_PRECACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/favicon.svg',
-  '/favicon.ico',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  '/icons/icon-512x512-maskable.png',
-  '/apple-touch-icon.png'
+  './',
+  './index.html',
+  './manifest.json',
+  './favicon.svg',
+  './favicon.ico',
+  './icons/icon-192x192.png',
+  './icons/icon-512x512.png',
+  './icons/icon-512x512-maskable.png',
+  './apple-touch-icon.png'
 ];
 
 // Install Event

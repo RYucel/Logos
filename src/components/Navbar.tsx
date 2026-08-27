@@ -51,7 +51,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               title="ΛΟΓΟΣ Greek"
             >
               <div className="w-8 h-8 rounded-lg overflow-hidden border border-amber-400/30 shadow-xs">
-                <img src="/icons/icon-96x96.png" alt="Λ" className="w-full h-full object-cover" />
+                <img src="./icons/icon-96x96.png" alt="Λ" className="w-full h-full object-cover" />
               </div>
               <span
                 className={`font-display text-2xl font-bold tracking-widest transition-colors ${
@@ -221,7 +221,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Menu className="w-5 h-5" />
           </button>
           <div className="w-6 h-6 rounded-md overflow-hidden">
-            <img src="/icons/icon-96x96.png" alt="Λ" className="w-full h-full object-cover" />
+            <img src="./icons/icon-96x96.png" alt="Λ" className="w-full h-full object-cover" />
           </div>
           <h1
             className={`font-display text-lg font-bold tracking-widest ${

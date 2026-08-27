@@ -393,7 +393,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <div className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/30 dark:from-blue-950/20 dark:to-indigo-950/20">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl overflow-hidden shadow-xs border border-blue-200 dark:border-blue-800 shrink-0">
-                  <img src="/icons/icon-192x192.png" alt="Λ" className="w-full h-full object-cover" />
+                  <img src="./icons/icon-192x192.png" alt="Λ" className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">

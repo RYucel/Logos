@@ -126,7 +126,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
             <div className="flex items-start gap-3.5 pr-6">
               <div className="w-13 h-13 rounded-xl overflow-hidden shadow-lg border border-white/20 shrink-0 bg-gradient-to-br from-[#005ba1] to-[#002142] p-0.5">
                 <img
-                  src="/icons/icon-192x192.png"
+                  src="./icons/icon-192x192.png"
                   alt="ΛΟΓΟΣ App Icon"
                   className="w-full h-full object-cover rounded-[10px]"
                 />
@@ -195,7 +195,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#005ba1] to-[#002d5a] p-1 shadow-md">
                   <img
-                    src="/icons/icon-192x192.png"
+                    src="./icons/icon-192x192.png"
                     alt="ΛΟΓΟΣ Icon"
                     className="w-full h-full object-cover rounded-lg"
                   />

@@ -7,7 +7,7 @@
     <meta name="description" content="Akademik ve Günlük Yunanca Öğrenme Platformu - Aralıklı Tekrar (SM-2), 500+ Kelime, CEFR Seviye Tespiti ve Diyalog Pratikleri." />
     
     <!-- PWA Settings -->
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="./manifest.json" />
     <meta name="theme-color" content="#005ba1" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="application-name" content="ΛΟΓΟΣ" />
@@ -16,20 +16,20 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ΛΟΓΟΣ" />
-    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
-    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="./icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192x192.png" />
 
     <!-- Windows / MS Tile -->
     <meta name="msapplication-TileColor" content="#005ba1" />
-    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
+    <meta name="msapplication-TileImage" content="./icons/icon-144x144.png" />
 
     <!-- Favicons -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png" />
+    <link rel="shortcut icon" href="./favicon.ico" />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -43,7 +43,7 @@
       // Register Service Worker
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
+          navigator.serviceWorker.register('./sw.js')
             .then((registration) => {
               console.log('✓ LOGOS PWA ServiceWorker registered with scope:', registration.scope);
             })
