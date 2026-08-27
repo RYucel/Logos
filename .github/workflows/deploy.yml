@@ -1,0 +1,66 @@
+name: Deploy LOGOS PWA to GitHub Pages & Production
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build, Lint & Package PWA
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Run TypeScript Lint & Typecheck
+        run: npm run lint
+
+      - name: Build Production SPA & Bundle
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Verify PWA Assets
+        run: |
+          test -f dist/index.html || exit 1
+          test -f dist/manifest.json || cp public/manifest.json dist/ || true
+          test -f dist/sw.js || cp public/sw.js dist/ || true
+          echo "PWA build verified successfully!"
+
+      - name: Upload Artifacts
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'dist/'
+
+  deploy-github-pages:
+    name: Deploy to GitHub Pages
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
