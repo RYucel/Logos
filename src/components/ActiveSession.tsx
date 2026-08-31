@@ -11,7 +11,8 @@ import {
   BookOpen,
   Award,
   CheckCircle2,
-  HelpCircle
+  HelpCircle,
+  RotateCcw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import {
@@ -19,6 +20,7 @@ import {
   FLASHCARD_LESSONS,
   GRAMMAR_EXERCISES
 } from '../data/mockData';
+import { DayCurriculum } from '../data/curriculum';
 import { speakGreek, playSound } from '../utils/speech';
 import { SM2QualityRating, VocabularyItem } from '../types';
 import { calculateSM2 } from '../utils/sm2';
@@ -33,6 +35,9 @@ interface ActiveSessionProps {
   onSM2Review?: (id: string, quality: SM2QualityRating) => void;
   sessionType?: ActiveSessionType;
   onSwitchSessionType?: (newType: 'vocabulary' | 'conversation' | 'grammar') => void;
+  curriculum?: DayCurriculum;
+  currentDayNumber?: number;
+  onAdvanceToNextDay?: () => void;
 }
 
 export const ActiveSession: React.FC<ActiveSessionProps> = ({
@@ -42,7 +47,10 @@ export const ActiveSession: React.FC<ActiveSessionProps> = ({
   vocabList = [],
   onSM2Review,
   sessionType = 'vocabulary',
-  onSwitchSessionType
+  onSwitchSessionType,
+  curriculum,
+  currentDayNumber = 1,
+  onAdvanceToNextDay
 }) => {
   const currentTaskType: 'vocabulary' | 'conversation' | 'grammar' =
     sessionType === 'conversation'
@@ -91,8 +99,12 @@ export const ActiveSession: React.FC<ActiveSessionProps> = ({
         }));
       }
     }
-    return FLASHCARD_LESSONS.map(f => ({ ...f, isVocabItem: false, originalItem: undefined }));
-  }, [sessionType, vocabList]);
+    const sourceFlashcards = curriculum?.flashcards && curriculum.flashcards.length > 0
+      ? curriculum.flashcards
+      : FLASHCARD_LESSONS;
+
+    return sourceFlashcards.map(f => ({ ...f, isVocabItem: false, originalItem: undefined }));
+  }, [sessionType, vocabList, curriculum]);
 
   const card = sessionCards[vocabIndex] || sessionCards[0];
   const totalVocabCards = sessionCards.length;
@@ -120,8 +132,7 @@ export const ActiveSession: React.FC<ActiveSessionProps> = ({
   /* -------------------------------------------------------------
      2. CONVERSATION STATE & LOGIC
   ------------------------------------------------------------- */
-  const [activeScenarioIndex] = useState(0);
-  const scenario = CONVERSATION_SCENARIOS[activeScenarioIndex] || CONVERSATION_SCENARIOS[0];
+  const scenario = curriculum?.conversationScenario || CONVERSATION_SCENARIOS[0];
   const [conversationTurnIndex, setConversationTurnIndex] = useState(0);
   const [selectedUserOptionId, setSelectedUserOptionId] = useState<string | null>(null);
   const [revealedFeedback, setRevealedFeedback] = useState<string | null>(null);
@@ -145,8 +156,11 @@ export const ActiveSession: React.FC<ActiveSessionProps> = ({
   const [isGrammarChecked, setIsGrammarChecked] = useState(false);
   const [, setGrammarCorrectCount] = useState(0);
 
-  const currentGrammarQ = GRAMMAR_EXERCISES[grammarIndex] || GRAMMAR_EXERCISES[0];
-  const totalGrammarQuestions = GRAMMAR_EXERCISES.length;
+  const grammarList = curriculum?.grammarExercises && curriculum.grammarExercises.length > 0
+    ? curriculum.grammarExercises
+    : GRAMMAR_EXERCISES;
+  const currentGrammarQ = grammarList[grammarIndex] || grammarList[0];
+  const totalGrammarQuestions = grammarList.length;
 
   /* -------------------------------------------------------------
      SESSION FINISH STATE
@@ -406,7 +420,7 @@ export const ActiveSession: React.FC<ActiveSessionProps> = ({
 
           {/* Action Buttons */}
           <div className="flex flex-col gap-2.5">
-            {nextTaskInfo && (
+            {nextTaskInfo ? (
               <button
                 onClick={handleProceedToNextTask}
                 className={`w-full py-3.5 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all cursor-pointer ${
@@ -418,7 +432,32 @@ export const ActiveSession: React.FC<ActiveSessionProps> = ({
                 <span>Sıradaki Göreve Geç: {nextTaskInfo.title}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
-            )}
+            ) : onAdvanceToNextDay ? (
+              <button
+                onClick={() => {
+                  playSound('success');
+                  setIsFinished(false);
+                  onAdvanceToNextDay();
+                  if (onSwitchSessionType) {
+                    onSwitchSessionType('vocabulary');
+                  }
+                  setVocabIndex(0);
+                  setIsRevealed(false);
+                  setConversationTurnIndex(0);
+                  setGrammarIndex(0);
+                  setSelectedGrammarOption(null);
+                  setIsGrammarChecked(false);
+                }}
+                className={`w-full py-3.5 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all cursor-pointer ${
+                  isDarkMode
+                    ? 'bg-[#3d91ff] text-[#0a121e] hover:bg-[#60a5fa] shadow-[0_4px_25px_rgba(61,145,255,0.35)]'
+                    : 'bg-[#004379] text-white hover:bg-[#005ba1] shadow-[0_8px_25px_rgba(0,67,121,0.25)]'
+                }`}
+              >
+                <span>🚀 Gün {currentDayNumber + 1} Görevlerine Başla</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            ) : null}
 
             <button
               onClick={onClose}
@@ -467,6 +506,14 @@ export const ActiveSession: React.FC<ActiveSessionProps> = ({
           {/* Task Title & Progress */}
           <div className="flex-1 max-w-md mx-auto flex flex-col items-center gap-1">
             <div className="flex items-center gap-2 text-xs font-bold">
+              <span
+                className={`px-2 py-0.5 rounded-md text-[11px] font-mono ${
+                  isDarkMode ? 'bg-[#3d91ff]/20 text-[#a9c7ff]' : 'bg-[#d3e4ff] text-[#004379]'
+                }`}
+              >
+                Gün {currentDayNumber}
+              </span>
+
               <span
                 className={`px-2.5 py-0.5 rounded-full ${
                   isDarkMode ? 'bg-[#1e293b] text-[#3d91ff]' : 'bg-[#eff4fc] text-[#004379]'

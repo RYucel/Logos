@@ -6,15 +6,15 @@ import {
   Info,
   CheckCircle2,
   BrainCircuit,
-  MessageSquare,
   Sparkles,
-  BookMarked,
   RotateCw,
   Clock,
-  Zap,
-  Calendar,
   FastForward,
-  RefreshCw
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  SunMedium,
+  RotateCcw
 } from 'lucide-react';
 import { LessonTask, SM2SchedulerState } from '../types';
 import { playSound } from '../utils/speech';
@@ -22,31 +22,48 @@ import { playSound } from '../utils/speech';
 interface LearnDashboardProps {
   isDarkMode: boolean;
   currentLevel: string;
+  currentDayNumber: number;
+  dayThemeTitle: string;
+  dayThemeSubtitle: string;
   tasks: LessonTask[];
   onStartSession: (taskType?: 'vocabulary' | 'conversation' | 'grammar') => void;
   onToggleTask: (taskId: string) => void;
+  onAdvanceToNextDay: () => void;
+  onSelectDay: (dayNumber: number) => void;
+  onResetCurrentDayTasks: () => void;
   streakDays: number;
   schedulerState?: SM2SchedulerState;
   onTriggerSchedulerCheck?: () => void;
   onFastForwardDays?: (days: number) => void;
   onResetSimulationTime?: () => void;
   onOpenLibrary?: () => void;
+  dayRolloverNotice?: string | null;
+  onDismissNotice?: () => void;
 }
 
 export const LearnDashboard: React.FC<LearnDashboardProps> = ({
   isDarkMode,
   currentLevel,
+  currentDayNumber,
+  dayThemeTitle,
+  dayThemeSubtitle,
   tasks,
   onStartSession,
   onToggleTask,
+  onAdvanceToNextDay,
+  onSelectDay,
+  onResetCurrentDayTasks,
   streakDays,
   schedulerState,
   onTriggerSchedulerCheck,
   onFastForwardDays,
   onResetSimulationTime,
-  onOpenLibrary
+  onOpenLibrary,
+  dayRolloverNotice,
+  onDismissNotice
 }) => {
-  const allCompleted = tasks.every(t => t.completed);
+  const allCompleted = tasks.length > 0 && tasks.every(t => t.completed);
+  const completedCount = tasks.filter(t => t.completed).length;
   const nextUncompletedTask = tasks.find(t => !t.completed);
   const nextTaskIndex = tasks.findIndex(t => !t.completed);
   const totalEstimatedMinutes = tasks.reduce((sum, t) => sum + t.durationMinutes, 0);
@@ -57,17 +74,69 @@ export const LearnDashboard: React.FC<LearnDashboardProps> = ({
 
   return (
     <main className="max-w-[1024px] mx-auto px-5 md:px-10 py-6 md:py-10 flex flex-col gap-8">
-      {/* Header Section */}
-      <div className="text-center md:text-left flex flex-col gap-2">
+      {/* Rollover / Day Notice Banner */}
+      {dayRolloverNotice && (
         <div
-          className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold w-fit mx-auto md:mx-0 shadow-xs ${
+          className={`p-4 rounded-2xl border flex items-center justify-between gap-3 shadow-md animate-in fade-in slide-in-from-top-3 duration-300 ${
             isDarkMode
-              ? 'bg-[#3d91ff]/20 text-[#a9c7ff] border border-[#3d91ff]/30'
-              : 'bg-[#d3e4ff] text-[#001c38] border border-[#004379]/10'
+              ? 'bg-[#1b2a47] border-[#3d91ff]/40 text-[#dbe3f4]'
+              : 'bg-[#d3e4ff] border-[#004379]/30 text-[#001c38]'
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>{currentLevel} Seviyesi</span>
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                isDarkMode ? 'bg-[#3d91ff]/20 text-[#a9c7ff]' : 'bg-[#004379]/15 text-[#004379]'
+              }`}
+            >
+              <SunMedium className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <p className="font-bold text-sm">{dayRolloverNotice}</p>
+              <p className="text-xs opacity-80 mt-0.5">
+                Yeni günün derslerini tamamlayarak çalışma serinizi sürdürün.
+              </p>
+            </div>
+          </div>
+          {onDismissNotice && (
+            <button
+              onClick={() => {
+                playSound('click');
+                onDismissNotice();
+              }}
+              className="text-xs font-bold px-3 py-1.5 rounded-lg border bg-white/20 hover:bg-white/30 transition-all cursor-pointer shrink-0"
+            >
+              Tamam
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Header Section */}
+      <div className="text-center md:text-left flex flex-col gap-2">
+        <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+          {/* Day Badge */}
+          <div
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black shadow-xs ${
+              isDarkMode
+                ? 'bg-[#3d91ff] text-[#0a121e]'
+                : 'bg-[#004379] text-white'
+            }`}
+          >
+            <span>🏛️ Gün {currentDayNumber}</span>
+          </div>
+
+          {/* Level Badge */}
+          <div
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold shadow-xs ${
+              isDarkMode
+                ? 'bg-[#3d91ff]/20 text-[#a9c7ff] border border-[#3d91ff]/30'
+                : 'bg-[#d3e4ff] text-[#001c38] border border-[#004379]/10'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{currentLevel} Seviyesi</span>
+          </div>
         </div>
 
         <h1
@@ -75,7 +144,7 @@ export const LearnDashboard: React.FC<LearnDashboardProps> = ({
             isDarkMode ? 'text-white' : 'text-[#004379]'
           }`}
         >
-          Günlük Programınız Hazır
+          Gün {currentDayNumber}: {dayThemeTitle}
         </h1>
 
         <p
@@ -83,7 +152,7 @@ export const LearnDashboard: React.FC<LearnDashboardProps> = ({
             isDarkMode ? 'text-[#94a3b8]' : 'text-[#414751]'
           }`}
         >
-          Bugün için özenle hazırlanmış, bilimsel olarak optimize edilmiş {totalEstimatedMinutes} dakikalık çalışma planınız.
+          {dayThemeSubtitle || `Bugün için bilimsel olarak optimize edilmiş ${totalEstimatedMinutes} dakikalık çalışma planınız.`}
         </p>
       </div>
 
@@ -98,25 +167,81 @@ export const LearnDashboard: React.FC<LearnDashboardProps> = ({
                 : 'bg-white border-[#dde3eb] meander-pattern-light'
             }`}
           >
-            <div className="flex items-center justify-between border-b pb-3 mb-6 border-current/10">
-              <h2
-                className={`text-lg md:text-xl font-bold font-display ${
-                  isDarkMode ? 'text-white' : 'text-[#161c22]'
-                }`}
-              >
-                Bugünün Görevleri
-              </h2>
-              <span
-                className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                  allCompleted
-                    ? 'bg-[#c8f17a] text-[#131f00]'
-                    : isDarkMode
-                    ? 'bg-[#1e293b] text-[#a9c7ff]'
-                    : 'bg-[#eff4fc] text-[#004379]'
-                }`}
-              >
-                {tasks.filter(t => t.completed).length} / {tasks.length} Tamamlandı
-              </span>
+            {/* Task Card Header & Day Navigation Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4 mb-6 border-current/10">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2
+                    className={`text-lg md:text-xl font-bold font-display ${
+                      isDarkMode ? 'text-white' : 'text-[#161c22]'
+                    }`}
+                  >
+                    Gün {currentDayNumber} Görevleri
+                  </h2>
+                  <span
+                    className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                      allCompleted
+                        ? 'bg-[#c8f17a] text-[#131f00]'
+                        : isDarkMode
+                        ? 'bg-[#1e293b] text-[#a9c7ff]'
+                        : 'bg-[#eff4fc] text-[#004379]'
+                    }`}
+                  >
+                    {completedCount} / {tasks.length} {allCompleted ? 'Tamamlandı 🎉' : 'Bitti'}
+                  </span>
+                </div>
+                <p className="text-xs text-[#727782] mt-0.5">
+                  Her gün 3 görevi tamamlayarak sonraki güne geçiş yapın.
+                </p>
+              </div>
+
+              {/* Day Switcher Controls */}
+              <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                <button
+                  onClick={() => {
+                    if (currentDayNumber > 1) {
+                      playSound('click');
+                      onSelectDay(currentDayNumber - 1);
+                    }
+                  }}
+                  disabled={currentDayNumber <= 1}
+                  className={`p-1.5 rounded-lg border text-xs font-semibold flex items-center gap-0.5 transition-all ${
+                    currentDayNumber <= 1
+                      ? 'opacity-40 cursor-not-allowed border-transparent'
+                      : isDarkMode
+                      ? 'bg-[#1e293b] border-[#2d3542] text-[#a9c7ff] hover:bg-[#2d3542] cursor-pointer'
+                      : 'bg-white border-[#dde3eb] text-[#004379] hover:bg-[#eff4fc] cursor-pointer'
+                  }`}
+                  title="Önceki Günün Görevleri"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline">Gün {currentDayNumber - 1}</span>
+                </button>
+
+                <span
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                    isDarkMode ? 'bg-[#0c1420] text-white border border-[#2d3542]' : 'bg-[#e9eef6] text-[#004379]'
+                  }`}
+                >
+                  Gün {currentDayNumber}
+                </span>
+
+                <button
+                  onClick={() => {
+                    playSound('click');
+                    onSelectDay(currentDayNumber + 1);
+                  }}
+                  className={`p-1.5 rounded-lg border text-xs font-semibold flex items-center gap-0.5 transition-all cursor-pointer ${
+                    isDarkMode
+                      ? 'bg-[#1e293b] border-[#2d3542] text-[#a9c7ff] hover:bg-[#2d3542]'
+                      : 'bg-white border-[#dde3eb] text-[#004379] hover:bg-[#eff4fc]'
+                  }`}
+                  title="Sonraki Günün Görevleri"
+                >
+                  <span className="hidden sm:inline">Gün {currentDayNumber + 1}</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Timeline Vertical Container */}
@@ -242,28 +367,87 @@ export const LearnDashboard: React.FC<LearnDashboardProps> = ({
               })}
             </div>
 
-            {/* Start Button */}
-            <div className="mt-8 flex justify-center">
-              <button
-                onClick={() => onStartSession(nextUncompletedTask?.type || 'vocabulary')}
-                className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm md:text-base flex items-center justify-center gap-2 shadow-lg transition-all duration-200 active:scale-95 cursor-pointer ${
-                  allCompleted
-                    ? isDarkMode
-                      ? 'bg-[#add461]/20 text-[#add461] border border-[#add461]/30 hover:bg-[#add461]/30'
-                      : 'bg-[#c8f17a] text-[#131f00] hover:bg-[#b8e562]'
-                    : isDarkMode
-                    ? 'bg-[#3d91ff] text-[#0a121e] hover:bg-[#60a5fa] shadow-[0px_4px_20px_rgba(61,145,255,0.25)]'
-                    : 'bg-[#004379] text-white hover:bg-[#005ba1] shadow-[0px_10px_30px_rgba(0,67,121,0.15)]'
+            {/* Completion Banner & Next Day Advance Action */}
+            {allCompleted ? (
+              <div
+                className={`mt-8 p-5 rounded-2xl border text-center animate-in zoom-in-95 duration-300 ${
+                  isDarkMode
+                    ? 'bg-[#0f1d2e] border-[#3d91ff]/40 shadow-[0_0_30px_rgba(61,145,255,0.15)]'
+                    : 'bg-[#eff4fc] border-[#004379]/30 shadow-md'
                 }`}
               >
-                <span>
-                  {allCompleted
-                    ? 'Tüm Günlük Görevler Tamamlandı 🎉 (Tekrar Çalış)'
-                    : `${nextUncompletedTask?.title || 'Bugüne'}'na Başla`}
-                </span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
+                <div
+                  className={`w-12 h-12 rounded-full mx-auto flex items-center justify-center mb-3 shadow-md ${
+                    isDarkMode ? 'bg-[#add461]/20 text-[#add461]' : 'bg-[#c8f17a] text-[#131f00]'
+                  }`}
+                >
+                  <Sparkles className="w-6 h-6" />
+                </div>
+
+                <h3
+                  className={`text-lg md:text-xl font-bold font-display ${
+                    isDarkMode ? 'text-white' : 'text-[#004379]'
+                  }`}
+                >
+                  🎉 Gün {currentDayNumber} Görevleri Başarıyla Tamamlandı! (3/3)
+                </h3>
+
+                <p
+                  className={`text-xs md:text-sm mt-1 mb-5 max-w-md mx-auto ${
+                    isDarkMode ? 'text-[#94a3b8]' : 'text-[#414751]'
+                  }`}
+                >
+                  Harika bir çalışma disiplini! Günlük seriniz ilerledi. Şimdi doğrudan sonraki günün programına geçebilirsiniz.
+                </p>
+
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      playSound('success');
+                      onAdvanceToNextDay();
+                    }}
+                    className={`w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-sm md:text-base flex items-center justify-center gap-2 shadow-lg transition-all duration-200 active:scale-95 cursor-pointer ${
+                      isDarkMode
+                        ? 'bg-[#3d91ff] text-[#0a121e] hover:bg-[#60a5fa] shadow-[0px_4px_25px_rgba(61,145,255,0.35)]'
+                        : 'bg-[#004379] text-white hover:bg-[#005ba1] shadow-[0px_8px_25px_rgba(0,67,121,0.25)]'
+                    }`}
+                  >
+                    <span>🚀 Gün {currentDayNumber + 1} Görevlerine Başla (0/3)</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      playSound('click');
+                      onResetCurrentDayTasks();
+                    }}
+                    className={`w-full sm:w-auto px-4 py-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-1.5 border transition-all cursor-pointer ${
+                      isDarkMode
+                        ? 'bg-[#1e293b] border-[#2d3542] text-[#a9c7ff] hover:bg-[#2d3542]'
+                        : 'bg-white border-[#dde3eb] text-[#414751] hover:bg-[#eff4fc]'
+                    }`}
+                    title="Bu günün görevlerini baştan tekrarla"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Bu Günü Sıfırla & Tekrarla</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={() => onStartSession(nextUncompletedTask?.type || 'vocabulary')}
+                  className={`w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-sm md:text-base flex items-center justify-center gap-2 shadow-lg transition-all duration-200 active:scale-95 cursor-pointer ${
+                    isDarkMode
+                      ? 'bg-[#3d91ff] text-[#0a121e] hover:bg-[#60a5fa] shadow-[0px_4px_20px_rgba(61,145,255,0.25)]'
+                      : 'bg-[#004379] text-white hover:bg-[#005ba1] shadow-[0px_10px_30px_rgba(0,67,121,0.15)]'
+                  }`}
+                >
+                  <span>{nextUncompletedTask?.title || 'Bugünün Görevine'} Başla</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -301,21 +485,24 @@ export const LearnDashboard: React.FC<LearnDashboardProps> = ({
 
             {/* 7-day Dot Matrix */}
             <div className="flex justify-center gap-1.5 mt-4">
-              {[true, true, true, true, true, false, false].map((active, idx) => (
-                <div
-                  key={idx}
-                  className={`w-2.5 h-2.5 rounded-full ${
-                    active
-                      ? isDarkMode
-                        ? 'bg-[#add461]'
-                        : 'bg-[#496800]'
-                      : isDarkMode
-                      ? 'bg-[#2d3542]'
-                      : 'bg-[#dde3eb]'
-                  }`}
-                  title={`Gün ${idx + 1}`}
-                />
-              ))}
+              {[1, 2, 3, 4, 5, 6, 7].map((dayIdx) => {
+                const isActive = dayIdx <= (currentDayNumber % 7 === 0 ? 7 : currentDayNumber % 7);
+                return (
+                  <div
+                    key={dayIdx}
+                    className={`w-2.5 h-2.5 rounded-full ${
+                      isActive
+                        ? isDarkMode
+                          ? 'bg-[#add461]'
+                          : 'bg-[#496800]'
+                        : isDarkMode
+                        ? 'bg-[#2d3542]'
+                        : 'bg-[#dde3eb]'
+                    }`}
+                    title={`Gün ${dayIdx}`}
+                  />
+                );
+              })}
             </div>
           </div>
 
@@ -470,12 +657,12 @@ export const LearnDashboard: React.FC<LearnDashboardProps> = ({
               )}
             </div>
 
-            {/* Quick Time Fast-Forward Controls (For Testing Scheduler) */}
+            {/* Quick Time Fast-Forward Controls (For Testing Scheduler & Days) */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[11px] font-semibold text-[#727782]">
                 <span className="flex items-center gap-1">
                   <FastForward className="w-3 h-3" />
-                  Zaman İlerlemesi Testi:
+                  Zaman & Gün İlerlemesi Testi:
                 </span>
                 {simulatedDays !== 0 && onResetSimulationTime && (
                   <button

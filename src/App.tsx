@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { NavTab, UserProfile, VocabularyItem, LessonTask } from './types';
 import {
   INITIAL_USER_PROFILE,
-  VOCABULARY_LIST,
-  DAILY_TASKS
+  VOCABULARY_LIST
 } from './data/mockData';
+import { getDayCurriculum } from './data/curriculum';
 import { Navbar } from './components/Navbar';
 import { LearnDashboard } from './components/LearnDashboard';
 import { PlacementTest } from './components/PlacementTest';
@@ -34,6 +34,19 @@ export default function App() {
     return false;
   });
 
+  const [currentDayNumber, setCurrentDayNumber] = useState<number>(() => {
+    const saved = localStorage.getItem('logos_current_day_number');
+    if (saved) {
+      const parsed = parseInt(saved, 10);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    return 1;
+  });
+
+  const currentCurriculum = useMemo(() => {
+    return getDayCurriculum(currentDayNumber);
+  }, [currentDayNumber]);
+
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('logos_user_profile');
     if (saved) {
@@ -50,16 +63,7 @@ export default function App() {
     const saved = localStorage.getItem('logos_vocab_list');
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const savedMap = new Map(parsed.map((item: VocabularyItem) => [item.id, item]));
-          const merged = VOCABULARY_LIST.map((item) => {
-            const existing = savedMap.get(item.id);
-            return existing ? { ...item, ...existing } : item;
-          });
-          const customWords = parsed.filter((item: VocabularyItem) => item.id.startsWith('v-custom-'));
-          return [...merged, ...customWords];
-        }
+        return JSON.parse(saved);
       } catch {
         // fallback
       }
@@ -89,13 +93,49 @@ export default function App() {
     const saved = localStorage.getItem('logos_daily_tasks');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch {
         // fallback
       }
     }
-    return DAILY_TASKS;
+    const savedDay = localStorage.getItem('logos_current_day_number');
+    const dayNum = savedDay ? parseInt(savedDay, 10) || 1 : 1;
+    return getDayCurriculum(dayNum).tasks;
   });
+
+  const [dayRolloverNotice, setDayRolloverNotice] = useState<string | null>(null);
+
+  // Check on load if calendar date changed and previous day was completed
+  useEffect(() => {
+    const todayDateKey = new Date().toISOString().slice(0, 10);
+    const lastActiveDate = localStorage.getItem('logos_last_active_date');
+
+    if (lastActiveDate && lastActiveDate !== todayDateKey) {
+      // New calendar day!
+      const savedTasksRaw = localStorage.getItem('logos_daily_tasks');
+      let prevTasksCompleted = false;
+      if (savedTasksRaw) {
+        try {
+          const parsed = JSON.parse(savedTasksRaw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            prevTasksCompleted = parsed.every((t: LessonTask) => t.completed);
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      if (prevTasksCompleted) {
+        const nextDay = currentDayNumber + 1;
+        setCurrentDayNumber(nextDay);
+        const nextCurr = getDayCurriculum(nextDay);
+        setTasks(nextCurr.tasks.map(t => ({ ...t, completed: false })));
+        setDayRolloverNotice(`Yeni gün başladı! Gün ${nextDay}: ${nextCurr.themeTitle} görevleriniz hazır.`);
+      }
+    }
+    localStorage.setItem('logos_last_active_date', todayDateKey);
+  }, []);
 
   // Sync dark mode class with document root
   useEffect(() => {
@@ -123,6 +163,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('logos_daily_tasks', JSON.stringify(tasks));
   }, [tasks]);
+
+  useEffect(() => {
+    localStorage.setItem('logos_current_day_number', String(currentDayNumber));
+  }, [currentDayNumber]);
 
   const handleToggleDarkMode = () => {
     setIsDarkMode(prev => !prev);
@@ -160,6 +204,34 @@ export default function App() {
       );
       return updated;
     });
+  };
+
+  const handleAdvanceToNextDay = (targetDay?: number) => {
+    const nextDay = targetDay ?? (currentDayNumber + 1);
+    setCurrentDayNumber(nextDay);
+    const nextCurr = getDayCurriculum(nextDay);
+    const newTasks = nextCurr.tasks.map(t => ({ ...t, completed: false }));
+    setTasks(newTasks);
+
+    // Increment streak & award progress
+    setUserProfile(prev => ({
+      ...prev,
+      streakDays: prev.streakDays + 1,
+      totalWordsLearned: prev.totalWordsLearned + 8
+    }));
+
+    setDayRolloverNotice(`Tebrikler! Gün ${nextDay}: ${nextCurr.themeTitle} programına geçtiniz. 🔥 Seri: ${userProfile.streakDays + 1} Gün`);
+  };
+
+  const handleSelectDay = (dayNumber: number) => {
+    if (dayNumber < 1) return;
+    setCurrentDayNumber(dayNumber);
+    const targetCurr = getDayCurriculum(dayNumber);
+    setTasks(targetCurr.tasks.map(t => ({ ...t, completed: false })));
+  };
+
+  const handleResetCurrentDayTasks = () => {
+    setTasks(prev => prev.map(t => ({ ...t, completed: false })));
   };
 
   const handleUpdateVocabStatus = (
@@ -213,12 +285,16 @@ export default function App() {
       }))
     );
 
-    // 3. Reset daily tasks to incomplete
-    setTasks(prev => prev.map(t => ({ ...t, completed: false })));
+    // 3. Reset to Day 1 tasks
+    setCurrentDayNumber(1);
+    const day1Curriculum = getDayCurriculum(1);
+    setTasks(day1Curriculum.tasks.map(t => ({ ...t, completed: false })));
+    localStorage.setItem('logos_current_day_number', '1');
 
     // 4. Reset simulation time & cached states
     resetSimulatedTime();
     localStorage.removeItem('logos_sm2_simulated_days');
+    setDayRolloverNotice(null);
   };
 
   const handleThemePreference = (theme: 'light' | 'dark' | 'system') => {
@@ -257,6 +333,9 @@ export default function App() {
           vocabList={vocabList}
           sessionType={activeSessionTaskType}
           onSwitchSessionType={setActiveSessionTaskType}
+          curriculum={currentCurriculum}
+          currentDayNumber={currentDayNumber}
+          onAdvanceToNextDay={handleAdvanceToNextDay}
         />
       </div>
     );
@@ -292,15 +371,23 @@ export default function App() {
           <LearnDashboard
             isDarkMode={isDarkMode}
             currentLevel={userProfile.level}
+            currentDayNumber={currentDayNumber}
+            dayThemeTitle={currentCurriculum.themeTitle}
+            dayThemeSubtitle={currentCurriculum.themeSubtitle}
             tasks={tasks}
             onStartSession={handleStartSession}
             onToggleTask={handleToggleTask}
+            onAdvanceToNextDay={handleAdvanceToNextDay}
+            onSelectDay={handleSelectDay}
+            onResetCurrentDayTasks={handleResetCurrentDayTasks}
             streakDays={userProfile.streakDays}
             schedulerState={schedulerState}
             onTriggerSchedulerCheck={triggerManualCheck}
             onFastForwardDays={fastForwardDays}
             onResetSimulationTime={resetSimulatedTime}
             onOpenLibrary={() => setActiveTab('library')}
+            dayRolloverNotice={dayRolloverNotice}
+            onDismissNotice={() => setDayRolloverNotice(null)}
           />
         )}
 
@@ -335,4 +422,3 @@ export default function App() {
     </div>
   );
 }
-
